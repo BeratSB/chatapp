@@ -43,3 +43,16 @@ form {
 .sign-out {
   margin-bottom: 1rem;
 }
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  color: #e6e5e8;
+  background-size: cover;
+  background-image: url("https://i.pinimg.com/originals/a1/ed/1a/a1ed1a9d7936141f9961ba5a9682f8fb.jpg");
+}

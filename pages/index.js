@@ -1,8 +1,9 @@
-import React, {useRef,useState,useEffect} from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import * as firebase from "firebase/app";
-import {getFirestore,addDoc,collection,query, orderBy, limit, queryEqual, onSnapshot,serverTimestamp} from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider,signInWithPopup} from 'firebase/auth';
+import { getFirestore, addDoc, collection, query, orderBy, limit, queryEqual, onSnapshot, serverTimestamp, where } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useAuthState, } from 'react-firebase-hooks/auth';
+
 
 
 firebase.initializeApp({
@@ -20,16 +21,18 @@ const firestore = getFirestore();
 function App() {
   const [currentRoom, setCurrentRoom] = useState("General");
   const [user] = useAuthState(auth);
+  console.log(user);
 
   return (
     <div className="App">
+      <NavBar user={user} currentRoom={currentRoom} setCurrentRoom={setCurrentRoom}/>
       <header>
         <h1>Willkommen im Chat</h1>
         <SignOut />
       </header>
 
       <section>
-        {user ? <ChatRoom /> : <SignIn />}
+        {user ? <ChatRoom currentRoom={currentRoom} /> : <SignIn />}
       </section>
 
     </div>
@@ -58,28 +61,27 @@ function SignOut() {
   )
 }
 
-function useCollectionData (query) {
-  const [data,setData] = useState([])
+function useCollectionData(query) {
+  const [data, setData] = useState([])
   const [queryState, setQueryState] = useState(query)
-  useEffect(()=>{
-    if(!queryEqual(queryState, query)) {
+  useEffect(() => {
+    if (!queryEqual(queryState, query)) {
       setQueryState(query)
     }
-  },[query])
-  useEffect(()=>{
-    const unsubscribe = onSnapshot(queryState, snapshot => console.log(snapshot)||setData(snapshot.docs.map(doc=>doc.data())))
-    return ()=>{unsubscribe()}
-  },[queryState])
+  }, [query])
+  useEffect(() => {
+    const unsubscribe = onSnapshot(queryState, snapshot => console.log(snapshot) || setData(snapshot.docs.map(doc => doc.data())))
+    return () => { unsubscribe() }
+  }, [queryState])
   return data
 }
 
 
- function ChatRoom() {
-   console.log(serverTimestamp)
+function ChatRoom({ currentRoom }) {
   const dummy = useRef();
   const messagesRef = collection(firestore, "messages");
 
-  const q = query(messagesRef, orderBy("createdAt"),limit(25));
+  const q = query(messagesRef, where("room", "==", currentRoom), orderBy("createdAt"), limit(25));
 
   const messages = useCollectionData(q, { idField: 'id' });
 
@@ -95,8 +97,9 @@ function useCollectionData (query) {
       text: formValue,
       createdAt: serverTimestamp(),
       uid,
-      photoURL
-    })
+      photoURL,
+      room: currentRoom
+    });
 
     setFormValue('')
     dummy.current.scrollIntoView({ behavior: 'smooth' });
@@ -106,6 +109,8 @@ function useCollectionData (query) {
     <main>
 
       {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
+
+
 
       <span ref={dummy}></span>
 
@@ -133,6 +138,106 @@ function ChatMessage(props) {
       <p>{text}</p>
     </div>
   </>)
+}
+
+function Rooms ({ currentRoom, setShowListMenu, setCurrentRoom}) {
+  const handleRoomChange = (room) => {
+    setCurrentRoom(room);
+    setShowListMenu(false);
+  };
+  return (
+    <div className="rooms">
+      <h2>Select room</h2>
+      <ul>
+        <li
+          onClick={() => {
+            handleRoomChange("Iphone Werkstatt");
+          }}
+          className={currentRoom === "Iphone Werkstatt" ? "active" : ""}
+        >
+          Iphone Werkstatt
+        </li>
+        <li
+          onClick={() => {
+            handleRoomChange("Android Werkstatt");
+          }}
+          className={currentRoom === "Android Werkstatt" ? "active" : ""}
+        >
+          Android Werkstatt
+        </li>
+        <li
+          onClick={() => {
+            handleRoomChange("General");
+          }}
+          className={currentRoom === "General" ? "active" : ""}
+        >
+          General
+        </li>
+        <li
+          onClick={() => {
+            handleRoomChange("Logistik");
+          }}
+          className={currentRoom === "ReactJs" ? "active" : ""}
+        >
+          Logistik
+        </li>
+      </ul>
+    </div>
+  );
+}
+
+function NavBar({ user, currentRoom, setCurrentRoom }) {
+  const [showListMenu, setShowListMenu] = useState(false);
+  return (
+    <nav>
+      <h1>
+        {user ? (
+          <>
+            Current room: <strong>{currentRoom}</strong>
+          </>
+        ) : (
+          <strong>Chat App</strong>
+        )}
+      </h1>
+      {user ? (
+        <>
+          <button
+            className="menu"
+            onClick={() => {
+              setShowListMenu(!showListMenu);
+            }}
+          >
+            <img
+              src="https://github.com/DwinaTech/public-images/blob/main/menu-bars.png?raw=true"
+              alt="menu"
+              style={{ opacity: showListMenu ? 0 : 1 }}
+            />
+            <img
+              src="https://github.com/DwinaTech/public-images/blob/main/cross-menu-icon.png?raw=true"
+              alt="menu-cross"
+              style={{ opacity: showListMenu ? 1 : 0 }}
+            />
+          </button>
+          <ul
+            className="list-menu"
+            style={{ top: showListMenu && user ? "10vh" : "-100vh" }}
+          >
+            <li>
+              <SignOut setShowListMenu={setShowListMenu} />
+            </li>
+            <li>
+              <Rooms
+                currentRoom={currentRoom}
+                setCurrentRoom={setCurrentRoom}
+                setShowListMenu={setShowListMenu}
+              />
+            </li>
+          </ul>
+        </>
+      ) : null}
+    </nav>
+  );
+
 }
 
 
