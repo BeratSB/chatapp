@@ -1,12 +1,31 @@
-import '../styles/globals.css'
-import React, { useRef, useState, useEffect } from 'react';
-import * as firebase from "firebase/app";
-import { getFirestore, addDoc, collection, query, orderBy, limit, queryEqual, onSnapshot, serverTimestamp, where } from 'firebase/firestore';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { useAuthState, } from 'react-firebase-hooks/auth';
+import { auth } from "../src/components/Configuration";
+import { useState, useEffect, useRef } from "react";
+import SignIn from "../src/components/SignIn";
+import NavBar from "../src/components/NavBar";
+import ChatRoom from "../src/components/ChatRoom";
 
-function MyApp({ Component, pageProps }) {
-  return <Component {...pageProps} />
-}
 
-export default MyApp
+import { useAuthState } from "react-firebase-hooks/auth";
+
+function App (){
+  const [user] = useAuthState(auth);
+  const [currentRoom, setCurrentRoom] = useState("General");
+  console.log(user)
+
+
+
+  return (
+    <div className="app">
+      <NavBar
+        user={user}
+        currentRoom={currentRoom}
+        setCurrentRoom={setCurrentRoom}
+      />
+      <div className="content">
+        {user ? <ChatRoom currentRoom={currentRoom} /> : <SignIn />}
+      </div>
+    </div>
+  );
+};
+
+export default App;
